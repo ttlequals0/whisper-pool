@@ -273,8 +273,8 @@ async def transcriptions(
                 "avg_logprob": getattr(s, "avg_logprob", 0.0),
                 "compression_ratio": getattr(s, "compression_ratio", 0.0),
                 "no_speech_prob": getattr(s, "no_speech_prob", 0.0),
-                # Off-spec: OpenAI puts words only at the top level. Clients that
-                # read seg["words"] (MinusPod) get nothing without this.
+                # Off-spec: OpenAI puts words only at the top level. Clients
+                # that read seg["words"] get nothing without this.
                 **({"words": _words_of(s)} if want_words else {}),
             } for i, s in enumerate(segments)]
 
