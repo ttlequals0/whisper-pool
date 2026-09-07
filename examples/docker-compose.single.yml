@@ -1,0 +1,36 @@
+# One replica. Start here, then scale out with the 3-replica compose file.
+services:
+  whisper:
+    image: ttlequals0/faster-whisper-dgx:1.0.2
+    container_name: whisper
+    hostname: whisper
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+    environment:
+      MODEL_NAME: large-v3
+      DEVICE: cuda
+      COMPUTE_TYPE: float16
+      BEAM_SIZE: "5"
+      BATCH_SIZE: "16"
+      MAX_CONCURRENT: "1"
+      VAD_FILTER: "1"
+      DEFAULT_LANGUAGE: en
+      INSTANCE_NAME: whisper
+      HF_HOME: /root/.cache/huggingface
+    volumes:
+      - ./models:/root/.cache/huggingface
+      - ./hotwords.txt:/app/hotwords.txt:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9000/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 180s
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

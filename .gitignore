@@ -1,0 +1,7 @@
+models/
+*.wav
+*.mp3
+*.json
+!examples/*.json
+.DS_Store
+__pycache__/

@@ -1,0 +1,13 @@
+# One term per line. Blank lines and # comments ignored.
+# Write terms exactly as they should appear in output.
+Redfish
+iPXE
+BMC
+baseboard management controller
+Proxmox
+LoRA
+PEFT
+vLLM
+ROCm
+GGUF
+NVMe-oF

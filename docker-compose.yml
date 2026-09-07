@@ -1,0 +1,70 @@
+# Three replicas, one decode each, behind a load balancer.
+#
+# Before first start, seed the model cache so the replicas do not all download
+# the same model at once:
+#   mkdir -p ./models
+#   docker run --rm --gpus all -v "$PWD/models":/root/.cache/huggingface \
+#     ttlequals0/faster-whisper-dgx:1.0.2 \
+#     python -c "from faster_whisper import WhisperModel; WhisperModel('large-v3', device='cuda', compute_type='float16')"
+
+x-whisper: &whisper
+  image: ttlequals0/faster-whisper-dgx:1.0.2
+  restart: unless-stopped
+  environment: &whisper-env
+    MODEL_NAME: large-v3
+    DEVICE: cuda
+    COMPUTE_TYPE: float16
+    BEAM_SIZE: "5"
+    BATCH_SIZE: "16"
+    MAX_CONCURRENT: "1"
+    VAD_FILTER: "1"
+    DEFAULT_LANGUAGE: en
+    INCLUDE_WORD_PROBABILITY: "0"
+    HF_HOME: /root/.cache/huggingface
+  volumes:
+    - ./models:/root/.cache/huggingface
+    - ./hotwords.txt:/app/hotwords.txt:ro
+  healthcheck:
+    test: ["CMD-SHELL", "curl -fsS http://localhost:9000/health || exit 1"]
+    interval: 30s
+    timeout: 5s
+    retries: 3
+    start_period: 180s
+  logging:
+    driver: json-file
+    options: {max-size: "10m", max-file: "3"}
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            count: all
+            capabilities: [gpu]
+
+services:
+  whisper-1:
+    <<: *whisper
+    container_name: whisper-1
+    hostname: whisper-1
+    environment:
+      <<: *whisper-env
+      INSTANCE_NAME: whisper-1
+    ports: ["9002:9000"]
+
+  whisper-2:
+    <<: *whisper
+    container_name: whisper-2
+    hostname: whisper-2
+    environment:
+      <<: *whisper-env
+      INSTANCE_NAME: whisper-2
+    ports: ["9003:9000"]
+
+  whisper-3:
+    <<: *whisper
+    container_name: whisper-3
+    hostname: whisper-3
+    environment:
+      <<: *whisper-env
+      INSTANCE_NAME: whisper-3
+    ports: ["9004:9000"]
