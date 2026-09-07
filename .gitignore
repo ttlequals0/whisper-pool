@@ -5,3 +5,4 @@ models/
 !examples/*.json
 .DS_Store
 __pycache__/
+CLAUDE.md
