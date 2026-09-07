@@ -4,3 +4,8 @@ examples/
 *.md
 .git/
 .gitignore
+CLAUDE.md
+.claude/
+.superpowers/
+superpowers/
+.DS_Store
