@@ -1,7 +1,5 @@
 # Three replicas, one decode each, behind a load balancer.
-#
-# Before first start, seed the model cache so the replicas do not all download
-# the same model at once:
+# Seed the model cache first so replicas do not all download at once:
 #   mkdir -p ./models
 #   docker run --rm --gpus all -v "$PWD/models":/root/.cache/huggingface \
 #     ttlequals0/faster-whisper-dgx:1.0.2 \

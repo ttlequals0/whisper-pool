@@ -1,8 +1,6 @@
-# faster-whisper OpenAI-compatible server for DGX Spark (GB10, sm_121, aarch64).
-#
-# No ctranslate2[cuda] wheel exists for linux/arm64, so `pip install faster-whisper`
-# yields a CPU-only build. Drop in a CUDA build with native sm_121 kernels and
-# recompile the Python bindings against it so the C++ ABI matches.
+# faster-whisper server for DGX Spark (GB10, sm_121, aarch64).
+# No ctranslate2[cuda] wheel exists for linux/arm64, so pip gives a CPU-only
+# build. Install a CUDA build and recompile the bindings against it.
 FROM nvidia/cuda:13.0.3-cudnn-runtime-ubuntu24.04
 
 ARG CT2_VERSION=4.6.0
@@ -14,8 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ffmpeg libopenblas0 \
     && rm -rf /var/lib/apt/lists/*
 
-# CUDA build of the CTranslate2 C++ library. 00- prefix keeps it ahead of any
-# pip-installed CUDA libs in the venv.
+# 00- prefix keeps this ahead of pip-installed CUDA libs in the venv.
 RUN curl -fsSL -o /tmp/ct2.tar.gz "${CT2_URL}" \
     && tar -xzf /tmp/ct2.tar.gz -C /opt \
     && rm /tmp/ct2.tar.gz \
@@ -26,8 +23,7 @@ ENV VENV=/opt/venv
 RUN python3 -m venv $VENV \
     && $VENV/bin/pip install --no-cache-dir --upgrade pip setuptools wheel pybind11
 
-# The PyPI wheel is built with _GLIBCXX_USE_CXX11_ABI=0; the library above uses
-# the new ABI, so swapping the .so alone fails on an undefined std::string symbol.
+# PyPI wheel uses the old C++ ABI; swapping the .so alone breaks on std::string.
 RUN git clone -q --branch "v${CT2_VERSION}" --depth 1 \
         https://github.com/OpenNMT/CTranslate2 /tmp/ct2src \
     && cd /tmp/ct2src/python \

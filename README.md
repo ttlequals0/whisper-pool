@@ -116,8 +116,8 @@ All settings are environment variables.
 ### Hotwords
 
 `hotwords.txt` biases decoding toward terms the model gets wrong, across the
-whole file. Write each term exactly as it should appear in the output, and
-include expansions next to acronyms when both get spoken:
+whole file. Write each term as it should appear in the output. Include expansions
+next to acronyms when both get spoken:
 
     Redfish
     BMC

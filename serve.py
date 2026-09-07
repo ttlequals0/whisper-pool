@@ -28,8 +28,7 @@ DEFAULT_LANG  = os.getenv("DEFAULT_LANGUAGE", "en")
 INCLUDE_PROB  = os.getenv("INCLUDE_WORD_PROBABILITY", "0") == "1"
 HOTWORDS_FILE = os.getenv("HOTWORDS_FILE", "/app/hotwords.txt")
 MAX_CONCURRENT = int(os.getenv("MAX_CONCURRENT", "1"))
-# Names this replica in /health, in every log line, and in the X-Whisper-Instance
-# response header, so a request can be traced back through the load balancer.
+# Appears in /health, log lines, and the X-Whisper-Instance response header.
 INSTANCE_NAME = os.getenv("INSTANCE_NAME") or socket.gethostname()
 
 BATCHED = BATCH_SIZE > 1
@@ -50,8 +49,7 @@ def _load_hotwords() -> Optional[str]:
 
 HOTWORDS = _load_hotwords()
 
-# Fail fast on a CPU-only CTranslate2. Silent CPU fallback is the failure mode
-# this whole image exists to prevent, so never serve in that state.
+# Never serve from a CPU-only CTranslate2; the fallback is silent.
 if DEVICE == "cuda":
     import ctranslate2
     n_gpu = ctranslate2.get_cuda_device_count()
@@ -81,16 +79,13 @@ def _transcribe(audio, *, language, beam_size, initial_prompt, hotwords,
         vad_filter=vad_filter,
         condition_on_previous_text=False,
     )
-    # BatchedInferencePipeline derives its clips from VAD and raises without
-    # them, so a no-VAD request runs sequentially instead of failing. That is
-    # the path callers use to recover a quiet tail that VAD suppressed.
+    # Batched decode needs VAD clips, so a no-VAD request goes sequential.
     if BATCHED and vad_filter:
         return batched.transcribe(audio, batch_size=BATCH_SIZE, **kw)
     return model.transcribe(audio, **kw)
 
 
-# Warm-up. First call JIT-compiles kernels; do it at boot, not on a user request.
-# Warm the alignment path too by passing word_timestamps=True.
+# First call JIT-compiles kernels. word_timestamps warms the alignment path.
 _t0 = time.perf_counter()
 _segs, _ = _transcribe(
     np.zeros(16000, dtype=np.float32), language=DEFAULT_LANG, beam_size=BEAM_SIZE,
@@ -111,15 +106,12 @@ async def tag_instance(request, call_next):
     response.headers["X-Whisper-Instance"] = INSTANCE_NAME
     return response
 
-# One decode at a time by default. Scale out with replicas rather than raising
-# this: three containers at 1 each matched one container at 3 in testing, and
-# isolate failures. run_in_executor keeps the event loop free for /health.
+# Scale out with replicas, not this. Executor keeps the event loop free.
 _gpu_lock = asyncio.Semaphore(MAX_CONCURRENT)
 
 
 def _normalize_granularities(raw: Optional[List[str]]) -> List[str]:
-    """Accept 'timestamp_granularities[]', 'timestamp_granularities',
-    repeated fields, and comma-joined values. Default to ['segment']."""
+    """Accept both spellings, repeated fields, and comma-joined values."""
     if not raw:
         return ["segment"]
     out = []
@@ -273,8 +265,7 @@ async def transcriptions(
                 "avg_logprob": getattr(s, "avg_logprob", 0.0),
                 "compression_ratio": getattr(s, "compression_ratio", 0.0),
                 "no_speech_prob": getattr(s, "no_speech_prob", 0.0),
-                # Off-spec: OpenAI puts words only at the top level. Clients
-                # that read seg["words"] get nothing without this.
+                # Off-spec: OpenAI puts words only at the top level.
                 **({"words": _words_of(s)} if want_words else {}),
             } for i, s in enumerate(segments)]
 
