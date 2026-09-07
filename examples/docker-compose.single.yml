@@ -1,7 +1,7 @@
 # One replica. Start here, then scale out with the 3-replica compose file.
 services:
   whisper:
-    image: ttlequals0/faster-whisper-dgx:1.0.2
+    image: ttlequals0/faster-whisper-dgx:${WHISPER_VERSION:-1.0.2}
     container_name: whisper
     hostname: whisper
     restart: unless-stopped

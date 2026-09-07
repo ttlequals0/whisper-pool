@@ -25,7 +25,7 @@ the CPU anyway.
 
 Single replica:
 
-    git clone https://github.com/YOURNAME/whisper-pool
+    git clone https://github.com/ttlequals0/whisper-pool
     cd whisper-pool
     mkdir -p models
     docker compose -f examples/docker-compose.single.yml up -d
