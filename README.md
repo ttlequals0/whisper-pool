@@ -248,6 +248,13 @@ and adding replicas will not help.
 **A short clip returns 200 with no segments.** VAD suppressed it. Retry that
 request with `vad_filter=false`.
 
+**Every request 404s after an edit to the NPM Advanced tab.** The name in
+`proxy_pass` must match the `upstream` in `http_top.conf`. When it does not,
+nginx fails the config test and NPM renders no server block for that host, so
+the domain has nothing to answer it. `nginx -t` still passes, because the
+broken block was never written. Check `docker exec <npm> ls
+/data/nginx/proxy_host/`: the host's numbered file will be missing.
+
 ## License
 
 MIT

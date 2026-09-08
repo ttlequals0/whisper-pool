@@ -21,6 +21,11 @@ has to live. Use `npm-http-top.conf` from this directory.
 of the replicas: NPM requires values there, but `proxy_pass` in the Advanced tab
 overrides them.
 
+The two files are a pair. `proxy_pass` names the upstream that `http_top.conf`
+defines, so installing one without the other fails the nginx config test and
+NPM renders no server block for that host. The domain 404s while `nginx -t`
+still reports success.
+
 Restart the NPM container after editing `http_top.conf`. A reload is not always
 enough: nginx keeps old workers alive until their connections drain, and a
 worker holding a long-lived upload connection can serve the previous config for
